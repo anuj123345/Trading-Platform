@@ -199,6 +199,8 @@ export async function POST(req: NextRequest) {
             vscode: { installed: false, path: "", installUrl: "https://code.visualstudio.com/" },
             pycharm: { installed: false, installUrl: "https://www.jetbrains.com/pycharm/download/" },
             os: os.platform(),
+            isVercel: !!process.env.VERCEL,
+            hostname: os.hostname(),
         };
 
         // 1. Check Python

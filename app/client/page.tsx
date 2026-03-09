@@ -316,11 +316,22 @@ export default function ClientPage() {
                                                             <div className="pt-2 space-y-2">
                                                                 <div className="flex items-center justify-between text-[10px]">
                                                                     <div className="flex items-center gap-2">
-                                                                        <div className={`w-2 h-2 rounded-full ${scanResult?.python?.installed ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                                                        <div className={`w-2 h-2 rounded-full ${scanResult?.python?.installed ? "bg-emerald-500" : "bg-rose-500"}`} title={scanResult?.isVercel ? "Disabled on Vercel" : ""} />
                                                                         <span className="font-bold text-muted-foreground">Python Engine:</span>
-                                                                        <span>{scanResult?.python?.installed ? scanResult.python.version : "Not Found"}</span>
+                                                                        <span>{scanResult?.python?.installed ? scanResult.python.version : (scanResult?.isVercel ? "Cloud Mode" : "Not Found")}</span>
                                                                     </div>
                                                                 </div>
+                                                                {scanResult?.isVercel && (
+                                                                    <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg mt-2 animate-in fade-in zoom-in duration-300">
+                                                                        <p className="text-[10px] leading-relaxed text-blue-400/80">
+                                                                            <strong className="text-blue-400 block mb-1">PRO-TIP: SECURE RUNNER</strong>
+                                                                            You are viewing the Cloud Version. For security, web browsers cannot scan your local files from a public URL.
+                                                                            <br /><br />
+                                                                            To use the <strong>IDE & Local Runner</strong>, simply run this project on your computer:
+                                                                            <code className="block mt-1 bg-black/40 p-1 rounded text-primary">npm run dev</code>
+                                                                        </p>
+                                                                    </div>
+                                                                )}
                                                                 {scanResult?.python?.installed && (
                                                                     <Button
                                                                         size="sm"
