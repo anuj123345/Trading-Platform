@@ -1,19 +1,39 @@
 import OpenAI from 'openai';
 import Replicate from 'replicate';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization helpers to avoid build-time errors when API keys are missing
+let _openai: OpenAI | null = null;
+let _replicate: Replicate | null = null;
 
-const replicate = new Replicate({
-    auth: process.env.REPLICATE_API_TOKEN,
-});
+function getOpenAI() {
+    if (!_openai) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error("Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.");
+        }
+        _openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+    }
+    return _openai;
+}
+
+function getReplicate() {
+    if (!_replicate) {
+        if (!process.env.REPLICATE_API_TOKEN) {
+            throw new Error("Missing credentials. Please set the `REPLICATE_API_TOKEN` environment variable.");
+        }
+        _replicate = new Replicate({
+            auth: process.env.REPLICATE_API_TOKEN,
+        });
+    }
+    return _replicate;
+}
 
 /**
  * Analyzes an image using GPT-4o-mini vision capabilities.
  */
 export async function analyzeImage(imageUrl: string): Promise<string> {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
             {
@@ -41,7 +61,7 @@ export async function analyzeImage(imageUrl: string): Promise<string> {
  * Generates an engaging Instagram caption based on content analysis.
  */
 export async function generateCaption(analysis: string): Promise<string> {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
             {
@@ -76,7 +96,7 @@ export async function generateFluxImage(analysis: string): Promise<string> {
 
     const prompt = `A highly detailed 3D isometric model of ${cleanAnalysis} rendered in a stylized miniature toy aesthetic. Materials: Matte plastic/painted metal/weathered stone texture with no self-shadowing. Lighting: - Completely shadowless rendering - Ultra bright and perfectly even illumination from all angles - Pure ambient lighting without directional shadows - Flat, consistent lighting across all surfaces - No ambient occlusion. Style specifications: - Clean, defined edges and surfaces - Slightly exaggerated proportions - Miniature/toy-like scale - Subtle wear and texturing - Rich color palette with muted tones - Isometric 3/4 view angle - Crisp details and micro-elements. Technical details: - 4K resolution - PBR materials without shadows - No depth of field - High-quality anti-aliasing - Perfect uniform lighting. Environment: Pure white background with zero shadows or gradients. Post-processing: High key lighting, maximum brightness, shadow removal.`;
 
-    const output: any = await replicate.run(
+    const output: any = await getReplicate().run(
         "black-forest-labs/flux-schnell",
         {
             input: {
