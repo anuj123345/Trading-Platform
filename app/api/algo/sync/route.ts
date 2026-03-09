@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
+interface AlgoState {
+    orders: any[];
+    positions: any[];
+    marginInfo: { cash: number; used: number };
+    lastSync: string | null;
+}
+
 // Global in-memory storage for the latest algo state
-// In a production environment, this would be backed by Redis or a database
-let latestAlgoState = {
+let latestAlgoState: AlgoState = {
     orders: [],
     positions: [],
     marginInfo: { cash: 0, used: 0 },
