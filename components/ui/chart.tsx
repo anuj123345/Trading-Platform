@@ -123,6 +123,9 @@ function ChartTooltipContent({
         indicator?: "line" | "dot" | "dashed"
         nameKey?: string
         labelKey?: string
+        payload?: any[]
+        active?: boolean
+        label?: any
     }) {
     const { config } = useChart()
 
