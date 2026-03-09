@@ -9,6 +9,27 @@ import { NIFTY_ALGO_SCRIPT } from "@/lib/nifty-script";
 
 const execPromise = promisify(exec);
 
+async function getVSCodeCommand(): Promise<string> {
+    try {
+        await execPromise(os.platform() === "win32" ? "where code" : "which code");
+        return "code";
+    } catch (e) {
+        if (os.platform() === "win32") {
+            const paths = [
+                path.join(process.env.LOCALAPPDATA || "", "Programs", "Microsoft VS Code", "bin", "code.cmd"),
+                path.join(process.env.ProgramFiles || "", "Microsoft VS Code", "bin", "code.cmd")
+            ];
+            for (const p of paths) {
+                try {
+                    await fs.access(p);
+                    return `"${p}"`;
+                } catch (err) { }
+            }
+        }
+        return "code"; // Default fallback
+    }
+}
+
 const BACKEND_STRATEGIES: Record<string, string> = {
     "Nifty": NIFTY_ALGO_SCRIPT,
     "Bank Nifty": "# Bank Nifty Breakout Strategy\nimport time\nprint('Monitoring Bank Nifty...')",
@@ -87,8 +108,8 @@ export async function POST(req: NextRequest) {
                 }
 
                 // Try to open the project folder AND the specific file
-                // Using "code <folder> <file>" allows opening the workspace context with the file focused
-                await execPromise(`code "${projectPath}" "${filePath}"`);
+                const codeCmd = await getVSCodeCommand();
+                await execPromise(`${codeCmd} "${projectPath}" "${filePath}"`);
                 return NextResponse.json({ success: true, message: `File ${filename} created and opened in VS Code` });
             } catch (err) {
                 console.error("Failed to launch VS Code via command:", err);
@@ -119,11 +140,19 @@ export async function POST(req: NextRequest) {
             results.python.version = stdout.trim();
         } catch (e) {
             try {
-                const { stdout } = await execPromise("python3 --version");
+                // Try hardcoded fallback for common installation paths
+                await fs.access("C:\\Python314\\python.exe");
+                const { stdout } = await execPromise("C:\\Python314\\python.exe --version");
                 results.python.installed = true;
                 results.python.version = stdout.trim();
             } catch (e2) {
-                results.python.installed = false;
+                try {
+                    const { stdout } = await execPromise("python3 --version");
+                    results.python.installed = true;
+                    results.python.version = stdout.trim();
+                } catch (e3) {
+                    results.python.installed = false;
+                }
             }
         }
 
@@ -134,7 +163,26 @@ export async function POST(req: NextRequest) {
             results.vscode.installed = true;
             results.vscode.path = stdout.split('\n')[0].trim();
         } catch (e) {
-            results.vscode.installed = false;
+            // Try hardcoded fallback for VS Code on Windows
+            if (os.platform() === "win32") {
+                const vscodeLocal = path.join(process.env.LOCALAPPDATA || "", "Programs", "Microsoft VS Code", "bin", "code.cmd");
+                try {
+                    await fs.access(vscodeLocal);
+                    results.vscode.installed = true;
+                    results.vscode.path = vscodeLocal;
+                } catch (e2) {
+                    const vscodeProgramFiles = path.join(process.env.ProgramFiles || "", "Microsoft VS Code", "bin", "code.cmd");
+                    try {
+                        await fs.access(vscodeProgramFiles);
+                        results.vscode.installed = true;
+                        results.vscode.path = vscodeProgramFiles;
+                    } catch (e3) {
+                        results.vscode.installed = false;
+                    }
+                }
+            } else {
+                results.vscode.installed = false;
+            }
         }
 
         // 3. Check PyCharm (Common paths on Windows)
