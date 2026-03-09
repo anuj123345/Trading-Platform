@@ -132,12 +132,27 @@ export default function AlgoPage() {
     const handleScan = async () => {
         setIsScanning(true);
         try {
-            const res = await fetch("/api/env/check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ permissionGranted: true, action: "scan" }),
-            });
-            const result = await res.json();
+            let result;
+            try {
+                // 1. Try Local Bridge first
+                const localRes = await fetch("http://localhost:3000/api/env/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ permissionGranted: true, action: "scan" }),
+                    signal: AbortSignal.timeout(2000)
+                });
+                result = await localRes.json();
+                console.log("Local Bridge Connected");
+            } catch (e) {
+                // 2. Fallback to Cloud API
+                const res = await fetch("/api/env/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ permissionGranted: true, action: "scan" }),
+                });
+                result = await res.json();
+            }
+
             if (result.success) {
                 setScanResult(result.data);
                 setScanPermission(true);
@@ -151,16 +166,34 @@ export default function AlgoPage() {
 
     const handleOpenIDE = async () => {
         try {
-            const res = await fetch("/api/env/check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "open",
-                    code: selectedStrategy.code,
-                    filename: "trading_strategy.py"
-                }),
-            });
-            const result = await res.json();
+            let result;
+            try {
+                // Try Local Bridge first
+                const localRes = await fetch("http://localhost:3000/api/env/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "open",
+                        code: selectedStrategy.code,
+                        filename: "trading_strategy.py"
+                    }),
+                    signal: AbortSignal.timeout(2000)
+                });
+                result = await localRes.json();
+            } catch (e) {
+                // Fallback to Cloud API
+                const res = await fetch("/api/env/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "open",
+                        code: selectedStrategy.code,
+                        filename: "trading_strategy.py"
+                    }),
+                });
+                result = await res.json();
+            }
+
             if (!result.success) {
                 alert(result.error || "Failed to launch VS Code");
             }

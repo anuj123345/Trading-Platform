@@ -125,12 +125,27 @@ export default function ClientPage() {
     const handleScan = async () => {
         setIsScanning(true);
         try {
-            const res = await fetch("/api/env/check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ permissionGranted: true, action: "scan" }),
-            });
-            const result = await res.json();
+            let result;
+            try {
+                // 1. Try Local Bridge first (if user is running npm run dev)
+                const localRes = await fetch("http://localhost:3000/api/env/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ permissionGranted: true, action: "scan" }),
+                    signal: AbortSignal.timeout(2000) // Don't wait too long if no local server
+                });
+                result = await localRes.json();
+                console.log("Local Bridge Connected");
+            } catch (e) {
+                // 2. Fallback to Cloud API
+                const res = await fetch("/api/env/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ permissionGranted: true, action: "scan" }),
+                });
+                result = await res.json();
+            }
+
             if (result.success) {
                 setScanResult(result.data);
                 setScanPermission(true);
@@ -144,17 +159,34 @@ export default function ClientPage() {
 
     const handleOpenIDE = async () => {
         try {
-            // Secure launch: only sending strategyId, NO code from frontend
-            const res = await fetch("/api/env/check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "open",
-                    strategyId: selectedStrategy.id,
-                    filename: "strategy_runner.py"
-                }),
-            });
-            const result = await res.json();
+            let result;
+            try {
+                // Try Local Bridge first
+                const localRes = await fetch("http://localhost:3000/api/env/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "open",
+                        strategyId: selectedStrategy.id,
+                        filename: "strategy_runner.py"
+                    }),
+                    signal: AbortSignal.timeout(2000)
+                });
+                result = await localRes.json();
+            } catch (e) {
+                // Fallback to Cloud API
+                const res = await fetch("/api/env/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "open",
+                        strategyId: selectedStrategy.id,
+                        filename: "strategy_runner.py"
+                    }),
+                });
+                result = await res.json();
+            }
+
             if (!result.success) {
                 alert(result.error || "Failed to launch IDE securely.");
             }
