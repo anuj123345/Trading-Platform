@@ -104,5 +104,5 @@ with st.sidebar:
         st.info("Currently viewing the cinematic portfolio. Experience optimized for desktop viewers.")
 
 # Main Display
-# Pointing to /welcome as the professional entry point
-st.components.v1.iframe("http://localhost:3000/welcome", height=900, scrolling=True)
+# Pointing to the production entry point on Vercel
+st.components.v1.iframe("https://client-pfolio.vercel.app/", height=900, scrolling=True)

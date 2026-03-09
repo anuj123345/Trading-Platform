@@ -16,9 +16,15 @@ const IMAGES = [
 ];
 
 const HorizontalCard = ({ src, index, progress }: { src: string; index: number; progress: any }) => {
-    // Parallax effect: foreground cards move at different rates than the background
-    const xBase = index * 450; // Horizontal spacing
-    const parallax = useTransform(progress, [0, 1], [0, -index * 100]);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        setIsMobile(window.innerWidth < 768);
+    }, []);
+
+    const spacing = isMobile ? 320 : 450;
+    const xBase = index * spacing;
+    const parallax = useTransform(progress, [0, 1], [0, -index * (isMobile ? 50 : 100)]);
     const opacity = useTransform(progress, [0, 0.1, 0.9, 1], [0.3, 1, 1, 0.3]);
     const scale = useTransform(progress, [0, 0.2, 0.8, 1], [0.9, 1, 1, 0.9]);
 
@@ -30,7 +36,7 @@ const HorizontalCard = ({ src, index, progress }: { src: string; index: number; 
                 scale,
                 left: xBase,
             }}
-            className="absolute top-1/2 -translate-y-1/2 w-[350px] h-[500px] shrink-0 pointer-events-auto"
+            className="absolute top-1/2 -translate-y-1/2 w-[280px] md:w-[350px] h-[400px] md:h-[500px] shrink-0 pointer-events-auto"
         >
             <div className="group relative w-full h-full overflow-hidden rounded-sm bg-black shadow-2xl transition-all duration-700 hover:ring-1 hover:ring-white/20">
                 <img
@@ -38,9 +44,9 @@ const HorizontalCard = ({ src, index, progress }: { src: string; index: number; 
                     alt={`p-${index}`}
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-90 group-hover:opacity-100"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 flex flex-col justify-end p-8">
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.4em] mb-2">Portfolio</p>
-                    <h3 className="text-xl font-medium text-white tracking-tighter">Cinematic Series {index + 1}</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 flex flex-col justify-end p-6 md:p-8">
+                    <p className="text-[9px] md:text-[10px] font-bold text-white/40 uppercase tracking-[0.4em] mb-2">Portfolio</p>
+                    <h3 className="text-lg md:text-xl font-medium text-white tracking-tighter">Cinematic Series {index + 1}</h3>
                 </div>
             </div>
         </motion.div>
@@ -72,7 +78,18 @@ export default function CinematicHero() {
     const titleBlur = useTransform(smoothProgress, [0, 0.1], ["blur(0px)", "blur(10px)"]);
 
     // Gallery transformation
-    const galleryX = useTransform(smoothProgress, [0.1, 1], ["0%", "-80%"]);
+    // Calculate precise scroll distance based on total cards
+    const [galleryConfig, setGalleryConfig] = useState({ spacing: 450, totalWidth: "80%" });
+
+    useEffect(() => {
+        const isMobile = window.innerWidth < 768;
+        const spacing = isMobile ? 320 : 450;
+        // Total distance to move to see all cards
+        const moveDistance = (IMAGES.length - 1) * spacing;
+        setGalleryConfig({ spacing, totalWidth: `-${moveDistance}px` });
+    }, []);
+
+    const galleryX = useTransform(smoothProgress, [0.1, 1], ["0px", galleryConfig.totalWidth]);
 
     return (
         <div
@@ -115,11 +132,9 @@ export default function CinematicHero() {
                 {/* 2. MAIN HORIZONTAL GALLERY */}
                 <motion.div
                     style={{ x: galleryX }}
-                    className="relative w-full h-full flex items-center px-[20vw]"
+                    className="relative w-full h-full flex items-center px-[10vw] md:px-[20vw]"
                 >
-                    <div className="relative flex items-center gap-[450px]">
-                        {/* Background Typography Removed */}
-
+                    <div className="relative flex items-center">
                         {/* Cards rendering */}
                         {IMAGES.map((src, i) => (
                             <HorizontalCard
@@ -129,8 +144,6 @@ export default function CinematicHero() {
                                 progress={smoothProgress}
                             />
                         ))}
-
-                        {/* End Message - Removed as per user request */}
                     </div>
                 </motion.div>
 
@@ -145,7 +158,7 @@ export default function CinematicHero() {
                     className="absolute top-8 left-8 z-[100]"
                 >
                     <a
-                        href="/welcome"
+                        href="/"
                         className="group flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:border-white/20 active:scale-95"
                     >
                         <svg

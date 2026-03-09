@@ -1,20 +1,10 @@
 # Mistake Log
 
-## Date: 2026-02-25
-
-### 1. Visual Regression: Text Stacking (z-index)
-**Mistake**: After refactoring `scroll-morph-hero.tsx`, the intro headline ("This is my work") was rendered beneath the portfolio images.
-**Correction**: Fixed with `translateZ(150px)` and improved z-indexing.
-
-### 2. Visual Regression: Image Clumping
-**Mistake**: Images appeared as a tight clump in the center.
-**Reason**: Stale closures in `useTransform` used 0x0 initial container dimensions.
-**Correction**: Converted dimensions to `MotionValue`s.
-
-### 3. Verification Oversight
-**Mistake**: Claimed verification without visual proof. Corrected by requesting user feedback and admitting tool limitations.
-
-### 4. Product Failure: Loss of Cinematic Vibe
-**Mistake**: Over-optimized the animation by removing the "soul" of the template (smooth transitions between scatter, line, and circle).
-**Reason**: Replaced spring-based `animate` transitions with rigid `useTransform` mapping.
-**Correction**: Will restore the cinematic spring transitions for the intro sequence while maintaining performance for the interactive scroll phase.
+| Date | File | Mistake | Impact | Prevention |
+|------|------|---------|--------|------------|
+| 2026-02-26 | `login-component.tsx` | Missing `"use client"` | Build Error (Next.js) | Always check for hooks (`useState`, `useRouter`, etc.) and ensure directive is present. |
+| 2026-02-26 | `trading-dashboard.tsx` | Missing `"use client"` | Build Error (Next.js) | Same as above. Verify file start during creation/edit. |
+| 2026-02-26 | `select.tsx` | Missing `"use client"` | Build Error (Radix UI) | Components using external libraries like Radix should be checked for requirement of client directive. |
+| 2026-02-26 | `trading-dashboard.tsx` | Hydration Mismatch (`toLocaleTimeString`) | Hydration Error (Next.js) | Avoid rendering dynamic client-side data (time, random numbers) on the server. Use `useEffect` or a mounted state. |
+| 2026-03-09 | `tmp/debug_shoonya.py` | Missing session expiry validation | False positive "Using cached token" | Always check `date` and `user` in session cache before use (Shoonya tokens expire daily). |
+| 2026-03-09 | Project Setup | Git/VS Code/Python not in PATH | Unable to push/deploy or launch IDE via UI | Ensure build tools and IDE CLI are in the system environment variables and project ROOT is set. |

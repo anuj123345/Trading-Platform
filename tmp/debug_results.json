@@ -1,0 +1,43 @@
+{
+    "session": "Session set from cache",
+    "limits": {
+        "stat": "Not_Ok",
+        "emsg": "Session Expired :  Invalid Session Key"
+    },
+    "quotes_v1": null,
+    "search": null,
+    "api_methods": [
+        "add_watch_list_scrip",
+        "cancel_order",
+        "close_websocket",
+        "delete_watch_list_scrip",
+        "exit_order",
+        "forgot_password",
+        "get_daily_price_series",
+        "get_holdings",
+        "get_limits",
+        "get_option_chain",
+        "get_order_book",
+        "get_positions",
+        "get_quotes",
+        "get_security_info",
+        "get_time_price_series",
+        "get_trade_book",
+        "get_watch_list",
+        "get_watch_list_names",
+        "login",
+        "logout",
+        "modify_order",
+        "option_greek",
+        "place_order",
+        "position_product_conversion",
+        "searchscrip",
+        "set_session",
+        "single_order_history",
+        "span_calculator",
+        "start_websocket",
+        "subscribe",
+        "subscribe_orders",
+        "unsubscribe"
+    ]
+}

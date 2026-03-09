@@ -1,0 +1,4 @@
+  File "D:\Antigravity\Portfolio\storage\active_algo.py", line 197
+    def on_close():
+    ^^^
+SyntaxError: invalid syntax
