@@ -9,6 +9,66 @@ import { NIFTY_ALGO_SCRIPT } from "@/lib/nifty-script";
 
 const execPromise = promisify(exec);
 
+/**
+ * Searches for Python in common installation paths across different OS platforms.
+ */
+async function findPythonPath(): Promise<{ installed: boolean; path: string; version: string }> {
+    // 1. Try standard commands first (handles PATH)
+    const commands = ["python", "python3", "py"];
+    for (const cmd of commands) {
+        try {
+            const { stdout } = await execPromise(`${cmd} --version`);
+            return { installed: true, path: cmd, version: stdout.trim() };
+        } catch (e) { }
+    }
+
+    // 2. Windows-specific deep scan for versioned folders
+    if (os.platform() === "win32") {
+        const potentialRoots = [
+            "C:\\",
+            path.join(process.env.LOCALAPPDATA || "", "Programs", "Python"),
+            path.join(process.env.ProgramFiles || "", "Python")
+        ];
+
+        for (const root of potentialRoots) {
+            try {
+                const dirs = await fs.readdir(root);
+                // Filter for folders starting with "Python" (e.g., Python314, Python311)
+                const pythonDirs = dirs
+                    .filter(d => d.toLowerCase().startsWith("python"))
+                    .sort()
+                    .reverse(); // Prefer newer versions if multiple exist
+
+                for (const dir of pythonDirs) {
+                    const fullExecPath = path.join(root, dir, "python.exe");
+                    try {
+                        await fs.access(fullExecPath);
+                        const { stdout } = await execPromise(`"${fullExecPath}" --version`);
+                        return { installed: true, path: fullExecPath, version: stdout.trim() };
+                    } catch (err) { }
+                }
+            } catch (err) { }
+        }
+    }
+
+    // 3. MacOS/Linux specific common paths
+    if (os.platform() !== "win32") {
+        const unixPaths = ["/usr/local/bin/python3", "/usr/bin/python3", "/opt/homebrew/bin/python3"];
+        for (const p of unixPaths) {
+            try {
+                await fs.access(p);
+                const { stdout } = await execPromise(`${p} --version`);
+                return { installed: true, path: p, version: stdout.trim() };
+            } catch (e) { }
+        }
+    }
+
+    return { installed: false, path: "", version: "" };
+}
+
+/**
+ * Searches for VS Code core executable or command script.
+ */
 async function getVSCodeCommand(): Promise<string> {
     try {
         await execPromise(os.platform() === "win32" ? "where code" : "which code");
@@ -17,7 +77,9 @@ async function getVSCodeCommand(): Promise<string> {
         if (os.platform() === "win32") {
             const paths = [
                 path.join(process.env.LOCALAPPDATA || "", "Programs", "Microsoft VS Code", "bin", "code.cmd"),
-                path.join(process.env.ProgramFiles || "", "Microsoft VS Code", "bin", "code.cmd")
+                path.join(process.env.ProgramFiles || "", "Microsoft VS Code", "bin", "code.cmd"),
+                path.join(process.env.ProgramFiles || "", "Microsoft VS Code", "Code.exe"),
+                "C:\\Program Files\\Microsoft VS Code\\bin\\code.cmd"
             ];
             for (const p of paths) {
                 try {
@@ -25,6 +87,12 @@ async function getVSCodeCommand(): Promise<string> {
                     return `"${p}"`;
                 } catch (err) { }
             }
+        } else if (os.platform() === "darwin") {
+            const macPath = "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code";
+            try {
+                await fs.access(macPath);
+                return `"${macPath}"`;
+            } catch (err) { }
         }
         return "code"; // Default fallback
     }
@@ -134,55 +202,24 @@ export async function POST(req: NextRequest) {
         };
 
         // 1. Check Python
-        try {
-            const { stdout } = await execPromise("python --version");
-            results.python.installed = true;
-            results.python.version = stdout.trim();
-        } catch (e) {
-            try {
-                // Try hardcoded fallback for common installation paths
-                await fs.access("C:\\Python314\\python.exe");
-                const { stdout } = await execPromise("C:\\Python314\\python.exe --version");
-                results.python.installed = true;
-                results.python.version = stdout.trim();
-            } catch (e2) {
-                try {
-                    const { stdout } = await execPromise("python3 --version");
-                    results.python.installed = true;
-                    results.python.version = stdout.trim();
-                } catch (e3) {
-                    results.python.installed = false;
-                }
-            }
-        }
+        const pythonResult = await findPythonPath();
+        results.python.installed = pythonResult.installed;
+        results.python.version = pythonResult.version;
 
         // 2. Check VS Code
-        try {
-            const cmd = os.platform() === "win32" ? "where code" : "which code";
-            const { stdout } = await execPromise(cmd);
-            results.vscode.installed = true;
-            results.vscode.path = stdout.split('\n')[0].trim();
-        } catch (e) {
-            // Try hardcoded fallback for VS Code on Windows
-            if (os.platform() === "win32") {
-                const vscodeLocal = path.join(process.env.LOCALAPPDATA || "", "Programs", "Microsoft VS Code", "bin", "code.cmd");
-                try {
-                    await fs.access(vscodeLocal);
-                    results.vscode.installed = true;
-                    results.vscode.path = vscodeLocal;
-                } catch (e2) {
-                    const vscodeProgramFiles = path.join(process.env.ProgramFiles || "", "Microsoft VS Code", "bin", "code.cmd");
-                    try {
-                        await fs.access(vscodeProgramFiles);
-                        results.vscode.installed = true;
-                        results.vscode.path = vscodeProgramFiles;
-                    } catch (e3) {
-                        results.vscode.installed = false;
-                    }
-                }
-            } else {
+        const vscodeCmd = await getVSCodeCommand();
+        if (vscodeCmd === "code") {
+            try {
+                const cmd = os.platform() === "win32" ? "where code" : "which code";
+                const { stdout } = await execPromise(cmd);
+                results.vscode.installed = true;
+                results.vscode.path = stdout.split('\n')[0].trim();
+            } catch (e) {
                 results.vscode.installed = false;
             }
+        } else {
+            results.vscode.installed = true;
+            results.vscode.path = vscodeCmd.replace(/"/g, "");
         }
 
         // 3. Check PyCharm (Common paths on Windows)
