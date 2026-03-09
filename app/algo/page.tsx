@@ -329,24 +329,34 @@ export default function AlgoPage() {
                                                             <div className="pt-2 space-y-2">
                                                                 <div className="flex items-center justify-between text-[10px]">
                                                                     <div className="flex items-center gap-2">
-                                                                        <div className={`w-2 h-2 rounded-full ${scanResult?.python?.installed ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                                                        <div className={`w-2 h-2 rounded-full ${scanResult?.python?.installed ? "bg-emerald-500" : "bg-rose-500"}`} title={scanResult?.isVercel ? "Disabled on Vercel" : ""} />
                                                                         <span className="font-bold text-muted-foreground">Python:</span>
-                                                                        <span>{scanResult?.python?.installed ? scanResult.python.version : "Not Found"}</span>
+                                                                        <span>{scanResult?.python?.installed ? scanResult.python.version : (scanResult?.isVercel ? "Cloud Mode" : "Not Found")}</span>
                                                                     </div>
-                                                                    {!scanResult?.python?.installed && (
+                                                                    {!scanResult?.python?.installed && !scanResult?.isVercel && (
                                                                         <button className="text-primary hover:underline" onClick={() => window.open(scanResult?.python?.installUrl, "_blank")}>Install</button>
                                                                     )}
                                                                 </div>
                                                                 <div className="flex items-center justify-between text-[10px]">
                                                                     <div className="flex items-center gap-2">
-                                                                        <div className={`w-2 h-2 rounded-full ${scanResult?.vscode?.installed ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                                                        <div className={`w-2 h-2 rounded-full ${scanResult?.vscode?.installed ? "bg-emerald-500" : "bg-rose-500"}`} title={scanResult?.isVercel ? "Disabled on Vercel" : ""} />
                                                                         <span className="font-bold text-muted-foreground">VS Code:</span>
-                                                                        <span>{scanResult?.vscode?.installed ? "Found" : "Not Found"}</span>
+                                                                        <span>{scanResult?.vscode?.installed ? "Found" : (scanResult?.isVercel ? "Cloud Mode" : "Not Found")}</span>
                                                                     </div>
-                                                                    {!scanResult?.vscode?.installed && (
+                                                                    {!scanResult?.vscode?.installed && !scanResult?.isVercel && (
                                                                         <button className="text-primary hover:underline" onClick={() => window.open(scanResult?.vscode?.installUrl, "_blank")}>Install</button>
                                                                     )}
                                                                 </div>
+
+                                                                {scanResult?.isVercel && (
+                                                                    <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg mt-2 animate-in fade-in zoom-in duration-300 shadow-sm">
+                                                                        <p className="text-[10px] leading-relaxed text-blue-400/90">
+                                                                            <strong className="text-blue-400 block mb-1">PRO-TIP: SECURE RUNNER</strong>
+                                                                            Local tool detection is disabled on Vercel for security. To use the <strong>Secure IDE / Runner</strong> features, please run this app on your computer:
+                                                                            <code className="block mt-1 bg-black/40 p-1 rounded text-primary border border-primary/10">npm run dev</code>
+                                                                        </p>
+                                                                    </div>
+                                                                )}
                                                                 {scanResult?.vscode?.installed && (
                                                                     <Button
                                                                         size="sm"
