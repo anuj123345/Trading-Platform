@@ -155,9 +155,13 @@ except Exception as _e:
 }
 
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
+        const headers = req.headers;
+        const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV || headers.get('x-vercel-id'));
 
         // Handle "Open in VS Code" action
         if (body.action === "open") {
@@ -199,7 +203,7 @@ export async function POST(req: NextRequest) {
             vscode: { installed: false, path: "", installUrl: "https://code.visualstudio.com/" },
             pycharm: { installed: false, installUrl: "https://www.jetbrains.com/pycharm/download/" },
             os: os.platform(),
-            isVercel: !!process.env.VERCEL,
+            isVercel: isVercel,
             hostname: os.hostname(),
         };
 
@@ -244,7 +248,13 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        return NextResponse.json({ success: true, data: results });
+        return NextResponse.json({ success: true, data: results }, {
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            }
+        });
     } catch (error: any) {
         console.error("Env check error:", error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
